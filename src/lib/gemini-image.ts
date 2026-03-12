@@ -36,8 +36,11 @@ export async function generateGlowUpImage(
     if (!res.ok) {
       const errText = await res.text();
       console.error("[gemini-image] HTTP error:", res.status, errText.slice(0, 500));
-      if (res.status === 400 && errText.includes("API_KEY")) {
-        return { error: "Google AI API key is invalid. Check GOOGLE_AI_API_KEY." };
+      if (res.status === 429) {
+        return { error: "Glow-up quota exceeded. Google AI requires a paid plan for image generation. Enable billing at aistudio.google.com." };
+      }
+      if (res.status === 403 || (res.status === 400 && errText.includes("API_KEY"))) {
+        return { error: "Google AI API key is invalid or lacks permissions. Check GOOGLE_AI_API_KEY." };
       }
       return { error: `Gemini API error: ${res.status}` };
     }
