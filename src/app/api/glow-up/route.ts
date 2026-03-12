@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 export const maxDuration = 60;
 
 const GLOW_UP_PROMPT =
-  "Edit this photo of a person. Same person, same pose, same expression, same background. Subtly improve their appearance: clearer and healthier skin, slightly better hairstyle, more defined jawline, optimized lighting. Keep identity fully recognizable. Photorealistic result, natural look. Do NOT change the person's identity.";
+  "Realistic glow-up of the same person. Keep identical identity, pose, expression and background. Reduce facial fat to create a leaner face with sharper jawline and defined cheekbones, model-like facial definition. Add a subtle healthy sun tan, improve skin clarity and tone, enhance lighting and natural contrast. Photorealistic, natural, more attractive version of the same person. Do not change identity.";
 
 export async function POST(request: Request) {
   try {
