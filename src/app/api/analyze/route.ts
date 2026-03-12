@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { analyzeFaceWithVision } from "@/lib/vision";
 import { NextResponse } from "next/server";
 
+export const maxDuration = 60;
+
 /** Normal CDF approximation (Abramowitz & Stegun) */
 function normalCDF(x: number): number {
   const a1 = 0.254829592;

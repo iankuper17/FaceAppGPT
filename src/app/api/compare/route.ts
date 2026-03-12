@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { analyzeFaceWithVision } from "@/lib/vision";
 import { NextResponse } from "next/server";
 
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
@@ -25,23 +27,26 @@ export async function POST(request: Request) {
     }
 
     const [signA, signB] = await Promise.all([
-      supabase.storage.from("selfies").createSignedUrl(imagePathA, 60),
-      supabase.storage.from("selfies").createSignedUrl(imagePathB, 60),
+      supabase.storage.from("selfies").createSignedUrl(imagePathA, 300),
+      supabase.storage.from("selfies").createSignedUrl(imagePathB, 300),
     ]);
 
     if (!signA.data?.signedUrl || !signB.data?.signedUrl) {
       return NextResponse.json({ error: "Could not access images" }, { status: 400 });
     }
 
-    const [resultA, resultB] = await Promise.all([
-      analyzeFaceWithVision(signA.data.signedUrl),
-      analyzeFaceWithVision(signB.data.signedUrl),
-    ]);
-
+    // Run sequentially to avoid OpenAI rate limits and reduce timeout risk
+    console.log("[compare] Analyzing face A...");
+    const resultA = await analyzeFaceWithVision(signA.data.signedUrl);
     if ("error" in resultA) {
+      console.error("[compare] Face A analysis failed:", resultA.error);
       return NextResponse.json({ error: `Face A: ${resultA.error}` }, { status: 502 });
     }
+
+    console.log("[compare] Analyzing face B...");
+    const resultB = await analyzeFaceWithVision(signB.data.signedUrl);
     if ("error" in resultB) {
+      console.error("[compare] Face B analysis failed:", resultB.error);
       return NextResponse.json({ error: `Face B: ${resultB.error}` }, { status: 502 });
     }
 
@@ -57,7 +62,7 @@ export async function POST(request: Request) {
       probability: scoreA >= scoreB ? probabilityA : 100 - probabilityA,
     });
   } catch (e) {
-    console.error(e);
+    console.error("[compare] Unexpected error:", e);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -201,7 +201,7 @@ export default function ComparePage() {
             disabled={busy}
             className="rounded-full bg-gradient-to-r from-rose-500 to-pink-500 text-white px-10 py-3 font-bold text-lg hover:opacity-90 disabled:opacity-50 transition"
           >
-            {comparing ? "Analyzing both faces..." : "Compare"}
+            {comparing ? "Analyzing both faces (this takes ~20s)..." : "Compare"}
           </button>
         </div>
       )}

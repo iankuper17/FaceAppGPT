@@ -63,7 +63,14 @@ export async function analyzeFaceWithVision(imageUrl: string): Promise<{ report:
 
   if (!response.ok) {
     const err = await response.text();
-    return { error: `Vision API error: ${response.status} ${err}` };
+    console.error("[vision] OpenAI API error:", response.status, err.slice(0, 300));
+    if (response.status === 401) {
+      return { error: "OpenAI API key is invalid. Check OPENAI_API_KEY in your environment variables." };
+    }
+    if (response.status === 429) {
+      return { error: "OpenAI rate limit reached. Please try again in a moment." };
+    }
+    return { error: `Vision API error: ${response.status}` };
   }
 
   const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
