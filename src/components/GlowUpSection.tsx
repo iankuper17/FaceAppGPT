@@ -24,28 +24,16 @@ export function GlowUpSection({ analysisId, originalImageUrl }: GlowUpSectionPro
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Failed to start glow up");
+        setError(data.error ?? "Failed to generate glow up");
         return;
       }
-      const taskId = data.task_id;
-      if (!taskId) {
-        setError("No task ID returned");
-        return;
+      if (data.image_url) {
+        setResultImageUrl(data.image_url);
+      } else {
+        setError("No image was returned. Try again.");
       }
-      const interval = setInterval(async () => {
-        const statusRes = await fetch(`/api/glow-up?task_id=${encodeURIComponent(taskId)}`);
-        const statusData = await statusRes.json();
-        if (statusData.status === "success" && statusData.image_url) {
-          clearInterval(interval);
-          setResultImageUrl(statusData.image_url);
-        } else if (statusData.status === "failed") {
-          clearInterval(interval);
-          setError("Glow up failed");
-        }
-      }, 3000);
-      setTimeout(() => clearInterval(interval), 120000);
     } catch {
-      setError("Request failed");
+      setError("Request failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -79,7 +67,7 @@ export function GlowUpSection({ analysisId, originalImageUrl }: GlowUpSectionPro
         disabled={loading}
         className="rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white px-8 py-3 font-semibold hover:opacity-90 disabled:opacity-50 transition"
       >
-        {loading ? "Generating..." : "Generate my glow up"}
+        {loading ? "Generating (this takes ~15s)..." : "Generate my glow up"}
       </button>
       {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
     </div>

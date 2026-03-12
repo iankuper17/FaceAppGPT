@@ -1,8 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
-import { createImageTask, getTaskStatus } from "@/lib/nanobanana";
+import { generateGlowUpImage } from "@/lib/gemini-image";
 import { NextResponse } from "next/server";
 
 export const maxDuration = 60;
+
+const GLOW_UP_PROMPT =
+  "Edit this photo of a person. Same person, same pose, same expression, same background. Subtly improve their appearance: clearer and healthier skin, slightly better hairstyle, more defined jawline, optimized lighting. Keep identity fully recognizable. Photorealistic result, natural look. Do NOT change the person's identity.";
 
 export async function POST(request: Request) {
   try {
@@ -31,119 +34,66 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Analysis not found" }, { status: 404 });
     }
 
-    const { data: signData, error: signError } = await supabase.storage
+    // Download the original image as base64
+    const { data: fileData, error: downloadError } = await supabase.storage
       .from("selfies")
-      .createSignedUrl(analysis.image_path, 300);
-    if (signError || !signData?.signedUrl) {
-      return NextResponse.json({ error: "Could not access image" }, { status: 400 });
-    }
-    const signedUrl = signData.signedUrl;
+      .download(analysis.image_path);
 
-    const prompt =
-      "Same person, same pose and expression. Improve appearance: better hairstyle, clearer and healthier skin, subtle enhancement. Keep identity and face recognizable. Photorealistic, natural lighting.";
-    const result = await createImageTask({
-      model: "google/gempix2",
-      prompt,
-      images: [signedUrl],
-    });
+    if (downloadError || !fileData) {
+      return NextResponse.json({ error: "Could not download image" }, { status: 400 });
+    }
+
+    const arrayBuffer = await fileData.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString("base64");
+    const mimeType = fileData.type || "image/jpeg";
+
+    // Call Gemini to generate glow-up
+    console.log("[glow-up] Calling Gemini for glow-up...");
+    const result = await generateGlowUpImage(base64, mimeType, GLOW_UP_PROMPT);
 
     if ("error" in result) {
-      console.error("[glow-up] createImageTask failed:", result.error);
+      console.error("[glow-up] Gemini failed:", result.error);
       return NextResponse.json({ error: result.error }, { status: 502 });
     }
 
-    const { data: glowUp, error: insertError } = await supabase
-      .from("glow_ups")
-      .insert({
-        analysis_id: analysisId,
-        user_id: user.id,
-        task_id: result.task_id,
-        prompt_used: prompt,
-        status: "processing",
-      })
-      .select("id, task_id")
-      .single();
+    // Upload result image to storage
+    const ext = result.mimeType.includes("png") ? "png" : "jpg";
+    const storagePath = `${user.id}/${crypto.randomUUID()}.${ext}`;
+    const imageBuffer = Buffer.from(result.imageBase64, "base64");
 
-    if (insertError) {
-      return NextResponse.json({ error: insertError.message }, { status: 500 });
+    const { error: uploadError } = await supabase.storage
+      .from("results")
+      .upload(storagePath, imageBuffer, {
+        contentType: result.mimeType,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error("[glow-up] Upload failed:", uploadError.message);
+      return NextResponse.json({ error: "Failed to save result image" }, { status: 500 });
     }
 
-    return NextResponse.json({ task_id: glowUp.task_id });
+    // Save glow_up record
+    await supabase.from("glow_ups").insert({
+      analysis_id: analysisId,
+      user_id: user.id,
+      task_id: null,
+      result_image_path: storagePath,
+      prompt_used: GLOW_UP_PROMPT,
+      status: "success",
+    });
+
+    // Return signed URL for the result
+    const { data: signedData } = await supabase.storage
+      .from("results")
+      .createSignedUrl(storagePath, 3600);
+
+    return NextResponse.json({
+      status: "success",
+      image_url: signedData?.signedUrl ?? null,
+    });
   } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
-}
-
-export async function GET(request: Request) {
-  try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { searchParams } = new URL(request.url);
-    const taskId = searchParams.get("task_id");
-    if (!taskId) {
-      return NextResponse.json({ error: "task_id required" }, { status: 400 });
-    }
-
-    const { data: glowUp, error: rowError } = await supabase
-      .from("glow_ups")
-      .select("id, status, result_image_path")
-      .eq("task_id", taskId)
-      .eq("user_id", user.id)
-      .single();
-
-    if (rowError || !glowUp) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
-
-    if (glowUp.status === "success" && glowUp.result_image_path) {
-      const { data: sd1 } = await supabase.storage
-        .from("results")
-        .createSignedUrl(glowUp.result_image_path, 3600);
-      return NextResponse.json({ status: "success", image_url: sd1?.signedUrl ?? undefined });
-    }
-
-    const apiStatus = await getTaskStatus(taskId);
-    if ("error" in apiStatus) {
-      return NextResponse.json({ status: glowUp.status, error: apiStatus.error });
-    }
-
-    if (apiStatus.status === "success" && apiStatus.imageUrl) {
-      const res = await fetch(apiStatus.imageUrl);
-      const blob = await res.blob();
-      const ext = "png";
-      const storagePath = `${user.id}/${crypto.randomUUID()}.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from("results")
-        .upload(storagePath, blob, { contentType: "image/png", upsert: false });
-
-      if (!uploadError) {
-        await supabase
-          .from("glow_ups")
-          .update({ status: "success", result_image_path: storagePath })
-          .eq("id", glowUp.id);
-      }
-
-      const { data: sd2 } = await supabase.storage
-        .from("results")
-        .createSignedUrl(storagePath, 3600);
-      return NextResponse.json({ status: "success", image_url: sd2?.signedUrl ?? undefined });
-    }
-
-    if (apiStatus.status === "failed") {
-      await supabase.from("glow_ups").update({ status: "failed" }).eq("id", glowUp.id);
-      return NextResponse.json({ status: "failed" });
-    }
-
-    return NextResponse.json({ status: apiStatus.status });
-  } catch (e) {
-    console.error(e);
+    console.error("[glow-up] Unexpected error:", e);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
