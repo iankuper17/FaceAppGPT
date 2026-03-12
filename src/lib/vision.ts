@@ -71,11 +71,13 @@ export async function analyzeFaceWithVision(imageUrl: string): Promise<{ report:
   if (!content) return { error: "Empty response from vision API." };
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const parsed = JSON.parse(content) as any;
-    if (parsed.error) return { error: parsed.error };
+    const parsed = JSON.parse(content);
+    if (parsed.error) return { error: String(parsed.error) };
 
-    const score = typeof parsed.face_score === "number" ? Math.min(10, Math.max(0, parsed.face_score)) : 5.5;
+    const score: number = typeof parsed.face_score === "number" ? Math.min(10, Math.max(0, parsed.face_score)) : 5.5;
+
+    const traits = parsed.perceived_traits as Record<string, unknown> | undefined;
+    const life = parsed.life_predictions as Record<string, unknown> | undefined;
 
     const report: AnalysisReport = {
       facial_structure: parsed.facial_structure ?? { jawline: 5, eye_symmetry: 5, facial_balance: 5 },
@@ -83,23 +85,23 @@ export async function analyzeFaceWithVision(imageUrl: string): Promise<{ report:
       expression_impact: parsed.expression_impact ?? { smile_boost: 0.3, neutral_rating: 5 },
       attractive_features: Array.isArray(parsed.attractive_features) ? parsed.attractive_features : [],
       improvement_areas: Array.isArray(parsed.improvement_areas) ? parsed.improvement_areas : [],
-      perceived_traits: parsed.perceived_traits
+      perceived_traits: traits
         ? {
-            confidence: Number(parsed.perceived_traits.confidence) || 50,
-            trustworthiness: Number(parsed.perceived_traits.trustworthiness) || 50,
-            dominance: Number(parsed.perceived_traits.dominance) || 50,
-            approachability: Number(parsed.perceived_traits.approachability) || 50,
-            intelligence: Number(parsed.perceived_traits.intelligence) || 50,
+            confidence: Number(traits.confidence) || 50,
+            trustworthiness: Number(traits.trustworthiness) || 50,
+            dominance: Number(traits.dominance) || 50,
+            approachability: Number(traits.approachability) || 50,
+            intelligence: Number(traits.intelligence) || 50,
           }
         : undefined,
-      life_predictions: parsed.life_predictions
+      life_predictions: life
         ? {
-            estimated_age: Number(parsed.life_predictions.estimated_age) || 25,
-            personality: String(parsed.life_predictions.personality ?? ""),
-            likely_hobbies: Array.isArray(parsed.life_predictions.likely_hobbies)
-              ? parsed.life_predictions.likely_hobbies.map(String)
+            estimated_age: Number(life.estimated_age) || 25,
+            personality: String(life.personality ?? ""),
+            likely_hobbies: Array.isArray(life.likely_hobbies)
+              ? (life.likely_hobbies as string[]).map(String)
               : [],
-            vibe: String(parsed.life_predictions.vibe ?? ""),
+            vibe: String(life.vibe ?? ""),
           }
         : undefined,
     };
