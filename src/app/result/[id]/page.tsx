@@ -121,7 +121,7 @@ export default async function ResultPage({ params }: PageProps) {
 
       {/* Share */}
       <div className="mb-14">
-        <ShareCard analysisId={analysis.id} score={Number(analysis.face_score)} percentile={analysis.percentile} />
+        <ShareCard analysisId={analysis.id} score={Number(analysis.face_score)} percentile={analysis.percentile} imageUrl={imageUrl} />
       </div>
 
       <p className="text-micro text-white/15 text-center pb-6">
