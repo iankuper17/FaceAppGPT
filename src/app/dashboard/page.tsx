@@ -12,7 +12,7 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, is_premium")
+    .select("display_name")
     .eq("id", user.id)
     .single();
 
@@ -27,7 +27,6 @@ export default async function DashboardPage() {
     <DashboardClient
       email={user.email ?? ""}
       displayName={profile?.display_name ?? null}
-      isPremium={profile?.is_premium ?? false}
       analyses={analyses ?? []}
     />
   );

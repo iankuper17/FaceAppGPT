@@ -121,18 +121,7 @@ export default async function ResultPage({ params }: PageProps) {
 
       {/* Share */}
       <div className="mb-14">
-        <ShareCard score={Number(analysis.face_score)} percentile={analysis.percentile} />
-      </div>
-
-      {/* Premium tease */}
-      <div className="glass-card p-6 text-center bg-gradient-ig-subtle mb-10">
-        <h3 className="text-title text-white mb-2">Unlock deeper insights</h3>
-        <p className="text-caption text-white/40 mb-5 max-w-sm mx-auto">
-          Get advanced simulations, personalized recommendations, and unlimited glow ups.
-        </p>
-        <button className="bg-gradient-ig text-white font-semibold px-8 py-3 rounded-2xl shadow-ig-glow-sm hover:opacity-90 transition">
-          Go Premium
-        </button>
+        <ShareCard analysisId={analysis.id} score={Number(analysis.face_score)} percentile={analysis.percentile} />
       </div>
 
       <p className="text-micro text-white/15 text-center pb-6">

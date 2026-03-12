@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GlassButton } from "@/components/ui/GlassButton";
 import { GlassTabBar } from "@/components/ui/GlassTabBar";
-import { PremiumBadge } from "@/components/ui/PremiumBadge";
 
 interface Analysis {
   id: string;
@@ -16,7 +15,6 @@ interface Analysis {
 interface DashboardClientProps {
   email: string;
   displayName: string | null;
-  isPremium: boolean;
   analyses: Analysis[];
 }
 
@@ -33,7 +31,7 @@ const fadeUp = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const } },
 };
 
-export function DashboardClient({ email, displayName, isPremium, analyses }: DashboardClientProps) {
+export function DashboardClient({ email, displayName, analyses }: DashboardClientProps) {
   return (
     <main className="min-h-[100dvh] px-5 pt-8 pb-28 max-w-2xl mx-auto">
       <motion.div initial="hidden" animate="visible" variants={stagger}>
@@ -45,7 +43,6 @@ export function DashboardClient({ email, displayName, isPremium, analyses }: Das
               <p className="text-caption text-white/40">
                 {displayName || email}
               </p>
-              {isPremium && <PremiumBadge />}
             </div>
           </div>
           <form action="/api/auth/signout" method="POST">

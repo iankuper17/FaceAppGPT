@@ -66,8 +66,6 @@ export interface Profile {
   email: string | null;
   display_name: string | null;
   avatar_url: string | null;
-  is_premium: boolean;
-  premium_until: string | null;
   show_in_leaderboard: boolean;
   created_at: string;
   updated_at: string;
