@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
+import { GlassCard } from "@/components/ui/GlassCard";
+import { GlassButton } from "@/components/ui/GlassButton";
 
 interface ShareCardProps {
   score: number;
@@ -46,52 +49,64 @@ export function ShareCard({ score, percentile }: ShareCardProps) {
   }
 
   return (
-    <div className="animate-fade-in-up" style={{ animationDelay: "1.6s", opacity: 0 }}>
-      <div className="rounded-2xl bg-white/[0.04] overflow-hidden">
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+    >
+      <h3 className="text-title text-white mb-4">Share your score</h3>
+
+      <GlassCard className="overflow-hidden">
         {/* Preview card */}
-        <div className="relative aspect-[1200/630] w-full bg-gradient-to-br from-[#0a0a0a] via-[#1a1a2e] to-[#0a0a0a] flex flex-col items-center justify-center p-6">
-          <p className="text-xs text-neutral-500 uppercase tracking-[0.3em] mb-2">FaceScore AI</p>
-          <p className="text-5xl sm:text-6xl font-extrabold text-gradient">{score.toFixed(1)}</p>
-          <p className="text-white font-semibold mt-2">Top {topPercent}% worldwide</p>
-          <p className="text-neutral-500 text-sm mt-3">What&apos;s yours?</p>
+        <div className="relative aspect-[1200/630] w-full bg-gradient-to-br from-graphite-950 via-plum-800 to-graphite-950 flex flex-col items-center justify-center p-6">
+          <div className="absolute inset-0 opacity-20" style={{ background: "radial-gradient(circle at 50% 40%, rgba(192,38,211,0.4) 0%, transparent 60%)" }} />
+          <p className="text-micro text-white/30 uppercase tracking-[0.3em] mb-3 relative z-10">FaceScore AI</p>
+          <p className="text-5xl sm:text-6xl font-bold text-gradient-ig relative z-10">{score.toFixed(1)}</p>
+          <p className="text-body font-semibold text-white mt-2 relative z-10">Top {topPercent}% worldwide</p>
+          <p className="text-caption text-white/30 mt-3 relative z-10">What&apos;s yours?</p>
         </div>
 
         {/* Actions */}
         <div className="p-5 space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
+            <GlassButton
+              variant="gradient"
+              size="sm"
+              className="w-full"
               onClick={() => { downloadImage(); copyCaption(); }}
-              className="rounded-xl bg-gradient-to-r from-pink-600 to-rose-500 text-white py-2.5 text-sm font-semibold hover:opacity-90 transition"
             >
-              Share on Instagram
-            </button>
-            <button
-              type="button"
+              Instagram
+            </GlassButton>
+            <GlassButton
+              variant="glass"
+              size="sm"
+              className="w-full"
               onClick={() => { downloadImage(); copyCaption(); }}
-              className="rounded-xl bg-white text-black py-2.5 text-sm font-semibold hover:bg-neutral-200 transition"
             >
-              Share on TikTok
-            </button>
+              TikTok
+            </GlassButton>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
+            <GlassButton
+              variant="glass"
+              size="sm"
+              className="w-full"
               onClick={shareOnX}
-              className="rounded-xl bg-neutral-800 text-white py-2.5 text-sm font-semibold hover:bg-neutral-700 transition"
             >
-              Share on X
-            </button>
-            <button
-              type="button"
+              X / Twitter
+            </GlassButton>
+            <GlassButton
+              variant="glass"
+              size="sm"
+              className="w-full"
               onClick={handleNativeShare}
-              className="rounded-xl bg-neutral-800 text-white py-2.5 text-sm font-semibold hover:bg-neutral-700 transition"
             >
-              {copied ? "Copied!" : "Copy link"}
-            </button>
+              {copied ? "Copied!" : "Share"}
+            </GlassButton>
           </div>
         </div>
-      </div>
-    </div>
+      </GlassCard>
+    </motion.div>
   );
 }

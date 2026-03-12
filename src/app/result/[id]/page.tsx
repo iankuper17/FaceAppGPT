@@ -47,18 +47,31 @@ export default async function ResultPage({ params }: PageProps) {
   const report = analysis.report as AnalysisReport | null;
 
   return (
-    <main className="min-h-screen px-4 py-10 max-w-xl mx-auto">
-      <div className="flex justify-between items-center mb-10">
-        <Link href="/dashboard" className="text-neutral-500 hover:text-white text-sm transition">
-          {"\u2190"} Dashboard
+    <main className="min-h-[100dvh] px-5 py-10 pb-20 max-w-xl mx-auto">
+      {/* Navigation */}
+      <div className="flex justify-between items-center mb-12">
+        <Link
+          href="/dashboard"
+          className="flex items-center gap-1.5 text-micro text-white/30 hover:text-white/60 transition"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+          Dashboard
         </Link>
-        <Link href="/analyze" className="text-neutral-500 hover:text-white text-sm transition">
-          New analysis {"\u2192"}
+        <Link
+          href="/analyze"
+          className="flex items-center gap-1.5 text-micro text-white/30 hover:text-white/60 transition"
+        >
+          New analysis
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <path d="M9 18l6-6-6-6" />
+          </svg>
         </Link>
       </div>
 
-      {/* 1. Hero Result */}
-      <div className="mb-12">
+      {/* Score Hero */}
+      <div className="mb-14">
         <ScoreDisplay
           score={Number(analysis.face_score)}
           percentile={analysis.percentile}
@@ -68,48 +81,62 @@ export default async function ResultPage({ params }: PageProps) {
 
       {/* Selfie preview */}
       {imageUrl && (
-        <div className="flex justify-center mb-12">
-          <img
-            src={imageUrl}
-            alt="Your selfie"
-            className="rounded-2xl max-h-72 object-cover shadow-2xl shadow-white/5"
-          />
+        <div className="flex justify-center mb-14">
+          <div className="relative rounded-glass overflow-hidden shadow-glass-lg">
+            <img
+              src={imageUrl}
+              alt="Your selfie"
+              className="max-h-72 object-cover"
+            />
+            <div className="absolute inset-0 rounded-glass ring-1 ring-inset ring-white/10" />
+          </div>
         </div>
       )}
 
-      {/* 2. What makes your face attractive + What's holding you back */}
+      {/* Report sections */}
       {report && (
-        <div className="mb-12">
+        <div className="mb-14">
           <ReportSections report={report} />
         </div>
       )}
 
-      {/* 3. What strangers think when they see you */}
+      {/* Perceived traits */}
       {report?.perceived_traits && (
-        <div className="mb-12">
+        <div className="mb-14">
           <PerceivedTraits traits={report.perceived_traits} />
         </div>
       )}
 
-      {/* 4. AI Guess My Life */}
+      {/* Life predictions */}
       {report?.life_predictions && (
-        <div className="mb-12">
+        <div className="mb-14">
           <LifePredictions predictions={report.life_predictions} />
         </div>
       )}
 
-      {/* 5. Glow Up (for everyone) */}
-      <div className="mb-12">
+      {/* Glow Up */}
+      <div className="mb-14">
         <GlowUpSection analysisId={analysis.id} originalImageUrl={imageUrl} />
       </div>
 
-      {/* 6. Share card */}
-      <div className="mb-12">
+      {/* Share */}
+      <div className="mb-14">
         <ShareCard score={Number(analysis.face_score)} percentile={analysis.percentile} />
       </div>
 
-      <p className="text-xs text-neutral-600 text-center pb-6">
-        Beauty is subjective. This result is for fun and guidance only.
+      {/* Premium tease */}
+      <div className="glass-card p-6 text-center bg-gradient-ig-subtle mb-10">
+        <h3 className="text-title text-white mb-2">Unlock deeper insights</h3>
+        <p className="text-caption text-white/40 mb-5 max-w-sm mx-auto">
+          Get advanced simulations, personalized recommendations, and unlimited glow ups.
+        </p>
+        <button className="bg-gradient-ig text-white font-semibold px-8 py-3 rounded-2xl shadow-ig-glow-sm hover:opacity-90 transition">
+          Go Premium
+        </button>
+      </div>
+
+      <p className="text-micro text-white/15 text-center pb-6">
+        Beauty is subjective. This is for fun and guidance only.
       </p>
     </main>
   );

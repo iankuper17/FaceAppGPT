@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
+import { AmbientBackground } from "@/components/ui/AmbientBackground";
+import { GlassCard } from "@/components/ui/GlassCard";
+import { GlassInput } from "@/components/ui/GlassInput";
+import { GlassButton } from "@/components/ui/GlassButton";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -25,47 +30,76 @@ export default function SignupPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-sm space-y-6">
-        <h1 className="text-2xl font-bold text-center">Sign up</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-4 py-2 text-white placeholder:text-neutral-500"
-          />
-          <input
-            type="password"
-            placeholder="Password (min 6 characters)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-            className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-4 py-2 text-white placeholder:text-neutral-500"
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-white text-black py-2 font-semibold hover:bg-neutral-200 disabled:opacity-50"
-          >
-            {loading ? "Creating account..." : "Sign up"}
-          </button>
-        </form>
-        {message && (
-          <p className={message.type === "error" ? "text-red-400 text-sm" : "text-green-400 text-sm"}>
-            {message.text}
+    <main className="relative min-h-[100dvh] flex items-center justify-center px-5">
+      <AmbientBackground intensity="low" />
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full max-w-sm relative z-10"
+      >
+        <GlassCard className="p-8">
+          <h1 className="text-display-sm text-white text-center mb-8">Create account</h1>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <GlassInput
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+            />
+            <GlassInput
+              type="password"
+              placeholder="Password (min 6 characters)"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+              autoComplete="new-password"
+            />
+
+            <div className="pt-2">
+              <GlassButton
+                type="submit"
+                variant="gradient"
+                size="md"
+                disabled={loading}
+                className="w-full"
+              >
+                {loading ? "Creating account..." : "Sign up"}
+              </GlassButton>
+            </div>
+          </form>
+
+          {message && (
+            <motion.p
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`mt-4 text-caption text-center ${
+                message.type === "error" ? "text-red-400" : "text-emerald-400"
+              }`}
+            >
+              {message.text}
+            </motion.p>
+          )}
+
+          <p className="text-center text-caption text-white/30 mt-6">
+            Already have an account?{" "}
+            <Link href="/login" className="text-white/60 hover:text-white transition">
+              Sign in
+            </Link>
           </p>
-        )}
-        <p className="text-center text-sm text-neutral-500">
-          Already have an account? <Link href="/login" className="text-white underline">Sign in</Link>
+        </GlassCard>
+
+        <p className="text-center mt-6">
+          <Link href="/" className="text-micro text-white/25 hover:text-white/50 transition">
+            Back home
+          </Link>
         </p>
-        <p className="text-center">
-          <Link href="/" className="text-neutral-400 hover:text-white">Back home</Link>
-        </p>
-      </div>
+      </motion.div>
     </main>
   );
 }

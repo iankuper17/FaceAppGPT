@@ -2,8 +2,13 @@
 
 import { useState, useRef } from "react";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import { validateImageFile } from "@/lib/validators";
 import { createClient } from "@/lib/supabase/client";
+import { AmbientBackground } from "@/components/ui/AmbientBackground";
+import { GlassCard } from "@/components/ui/GlassCard";
+import { GlassButton } from "@/components/ui/GlassButton";
+import { ProgressCapsule } from "@/components/ui/ProgressCapsule";
 
 const BUCKET = "selfies";
 
@@ -95,124 +100,137 @@ export default function ComparePage() {
 
   const busy = uploading || comparing;
 
+  function UploadPanel({ side, preview, inputRef }: {
+    side: "a" | "b";
+    preview: string | null;
+    inputRef: React.RefObject<HTMLInputElement | null>;
+  }) {
+    const score = result ? (side === "a" ? result.score_a : result.score_b) : null;
+    const isWinner = result?.winner === side;
+
+    return (
+      <div className="flex flex-col items-center gap-3">
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) uploadFile(f, side);
+          }}
+        />
+        <motion.button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={busy}
+          className={`w-full aspect-[3/4] rounded-glass overflow-hidden transition-all duration-300 ${
+            isWinner ? "ring-2 ring-ig-magenta/60 shadow-ig-glow-sm" : ""
+          }`}
+          whileHover={busy ? undefined : { scale: 1.02 }}
+          whileTap={busy ? undefined : { scale: 0.98 }}
+        >
+          <GlassCard className="w-full h-full flex items-center justify-center p-0 !rounded-glass">
+            {preview ? (
+              <img src={preview} alt={`Face ${side.toUpperCase()}`} className="w-full h-full object-cover rounded-glass" />
+            ) : (
+              <div className="flex flex-col items-center gap-3 px-4">
+                <div className="w-12 h-12 rounded-2xl bg-white/[0.04] flex items-center justify-center">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-white/25">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                </div>
+                <p className="text-micro text-white/25 text-center">
+                  Face {side.toUpperCase()}
+                </p>
+              </div>
+            )}
+          </GlassCard>
+        </motion.button>
+
+        <AnimatePresence>
+          {score != null && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center"
+            >
+              <p className={`text-2xl font-bold ${isWinner ? "text-gradient-ig" : "text-white/40"}`}>
+                {score.toFixed(1)}
+              </p>
+              {isWinner && (
+                <p className="text-micro font-semibold text-ig-magenta mt-0.5">
+                  WINNER &bull; {result!.probability}%
+                </p>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
+
   return (
-    <main className="min-h-screen px-4 py-8 max-w-2xl mx-auto">
-      <header className="flex items-center gap-4 mb-10">
-        <Link href="/dashboard" className="text-neutral-400 hover:text-white text-sm">
-          {"\u2190"} Dashboard
+    <main className="relative min-h-[100dvh] px-5 py-8 max-w-2xl mx-auto">
+      <AmbientBackground intensity="low" />
+
+      <header className="relative z-10 mb-10">
+        <Link href="/dashboard" className="flex items-center gap-1.5 text-micro text-white/30 hover:text-white/60 transition">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+          Dashboard
         </Link>
       </header>
 
-      <div className="text-center mb-10">
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2">
-          Who is hotter?
-        </h1>
-        <p className="text-neutral-400">Upload two photos and let the AI decide.</p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 mb-8">
-        {/* Face A */}
-        <div>
-          <input
-            ref={inputARef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) uploadFile(f, "a");
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => inputARef.current?.click()}
-            disabled={busy}
-            className="w-full aspect-[3/4] rounded-2xl border-2 border-dashed border-neutral-700 hover:border-neutral-500 flex items-center justify-center overflow-hidden transition disabled:opacity-50"
-          >
-            {previewA ? (
-              <img src={previewA} alt="Face A" className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-neutral-500 text-sm px-4 text-center">
-                Tap to upload<br />Face A
-              </span>
-            )}
-          </button>
-          {result && (
-            <div className="text-center mt-3">
-              <p className={`text-2xl font-bold ${result.winner === "a" ? "text-gradient" : "text-neutral-400"}`}>
-                {result.score_a.toFixed(1)}
-              </p>
-              {result.winner === "a" && (
-                <p className="text-xs text-amber-400 font-semibold mt-1">
-                  WINNER {"\u2022"} {result.probability}%
-                </p>
-              )}
-            </div>
-          )}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="relative z-10"
+      >
+        <div className="text-center mb-10">
+          <h1 className="text-display-sm text-white mb-2">Who is hotter?</h1>
+          <p className="text-caption text-white/40">Upload two photos and let the AI decide.</p>
         </div>
 
-        {/* Face B */}
-        <div>
-          <input
-            ref={inputBRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) uploadFile(f, "b");
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => inputBRef.current?.click()}
-            disabled={busy}
-            className="w-full aspect-[3/4] rounded-2xl border-2 border-dashed border-neutral-700 hover:border-neutral-500 flex items-center justify-center overflow-hidden transition disabled:opacity-50"
-          >
-            {previewB ? (
-              <img src={previewB} alt="Face B" className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-neutral-500 text-sm px-4 text-center">
-                Tap to upload<br />Face B
-              </span>
-            )}
-          </button>
-          {result && (
-            <div className="text-center mt-3">
-              <p className={`text-2xl font-bold ${result.winner === "b" ? "text-gradient" : "text-neutral-400"}`}>
-                {result.score_b.toFixed(1)}
-              </p>
-              {result.winner === "b" && (
-                <p className="text-xs text-amber-400 font-semibold mt-1">
-                  WINNER {"\u2022"} {result.probability}%
-                </p>
-              )}
-            </div>
-          )}
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          <UploadPanel side="a" preview={previewA} inputRef={inputARef} />
+          <UploadPanel side="b" preview={previewB} inputRef={inputBRef} />
         </div>
-      </div>
 
-      {/* VS indicator */}
-      {previewA && previewB && !result && (
+        {/* Compare button or loading */}
         <div className="text-center">
-          <button
-            type="button"
-            onClick={handleCompare}
-            disabled={busy}
-            className="rounded-full bg-gradient-to-r from-rose-500 to-pink-500 text-white px-10 py-3 font-bold text-lg hover:opacity-90 disabled:opacity-50 transition"
-          >
-            {comparing ? "Analyzing both faces (this takes ~20s)..." : "Compare"}
-          </button>
+          {comparing ? (
+            <ProgressCapsule label="Analyzing both faces..." />
+          ) : previewA && previewB && !result ? (
+            <GlassButton
+              variant="gradient"
+              size="lg"
+              onClick={handleCompare}
+              disabled={busy}
+            >
+              Compare
+            </GlassButton>
+          ) : null}
         </div>
-      )}
 
-      {error && (
-        <p className="mt-6 text-red-400 text-sm text-center" role="alert">{error}</p>
-      )}
+        {error && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mt-6 text-caption text-red-400 text-center"
+            role="alert"
+          >
+            {error}
+          </motion.p>
+        )}
 
-      <p className="mt-10 text-xs text-neutral-500 text-center">
-        For fun only. Beauty is subjective.
-      </p>
+        <p className="mt-10 text-micro text-white/15 text-center">
+          For fun only. Beauty is subjective.
+        </p>
+      </motion.div>
     </main>
   );
 }

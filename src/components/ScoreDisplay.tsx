@@ -1,5 +1,8 @@
 "use client";
 
+import { motion } from "framer-motion";
+import { ScoreRing } from "@/components/ui/ScoreRing";
+
 interface ScoreDisplayProps {
   score: number;
   percentile: number | null;
@@ -10,40 +13,42 @@ function formatRank(rank: number): string {
   return "#" + rank.toLocaleString("en-US");
 }
 
-function getScoreEmoji(score: number): string {
-  if (score >= 8) return "\u{1F525}";
-  if (score >= 7) return "\u2728";
-  if (score >= 5.5) return "\u{1F44D}";
-  return "\u{1F611}";
-}
-
 export function ScoreDisplay({ score, percentile, globalRank }: ScoreDisplayProps) {
   const attractivePercent = percentile ?? Math.round(score * 10);
 
   return (
-    <div className="text-center space-y-6 py-4">
-      <div className="animate-count-up">
-        <span className="text-4xl">{getScoreEmoji(score)}</span>
-        <p className="text-7xl sm:text-8xl font-extrabold text-gradient mt-2 tracking-tight">
-          {score.toFixed(1)}
-        </p>
-        <p className="text-lg text-neutral-400 mt-2 font-medium tracking-wide uppercase">
-          Face Score
-        </p>
-      </div>
+    <div className="text-center space-y-8 py-6">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.8, ease: [0.34, 1.56, 0.64, 1] }}
+        className="flex justify-center"
+      >
+        <ScoreRing score={score} size={220} strokeWidth={6} />
+      </motion.div>
 
-      <div className="animate-fade-in-up" style={{ animationDelay: "0.2s", opacity: 0 }}>
-        <p className="text-xl sm:text-2xl text-white font-semibold">
-          You are more attractive than{" "}
-          <span className="text-gradient">{attractivePercent}%</span> of people.
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <p className="text-title text-white/80">
+          More attractive than{" "}
+          <span className="text-gradient-ig font-bold">{attractivePercent}%</span>{" "}
+          of people.
         </p>
-      </div>
+      </motion.div>
 
       {globalRank != null && (
-        <div className="animate-fade-in-up" style={{ animationDelay: "0.4s", opacity: 0 }}>
-          <p className="text-sm text-neutral-500 uppercase tracking-widest mb-1">Global Rank</p>
-          <p className="text-3xl font-bold text-white">{formatRank(globalRank)}</p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="flex items-center justify-center gap-3"
+        >
+          <span className="text-micro uppercase tracking-[0.2em] text-white/30">Global Rank</span>
+          <span className="text-title text-white font-bold">{formatRank(globalRank)}</span>
+        </motion.div>
       )}
     </div>
   );
