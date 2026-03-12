@@ -54,7 +54,7 @@ export function FaceUploader({ onSuccess, onError }: FaceUploaderProps) {
     }
 
     setAnalyzing(true);
-    const imagePath = `${BUCKET}/${path}`;
+    const imagePath = path;
 
     try {
       const res = await fetch("/api/analyze", {

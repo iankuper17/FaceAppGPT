@@ -108,8 +108,16 @@ CREATE POLICY "Anyone can read analyses of leaderboard users"
     user_id IN (SELECT id FROM public.profiles WHERE show_in_leaderboard = TRUE)
   );
 
--- 5) Storage: create buckets in Dashboard (selfies, results) then run policies.
--- Paths: selfies/{user_id}/{filename}, results/{user_id}/{filename}
+-- 5) Storage: create buckets and policies.
+-- Paths within each bucket: {user_id}/{filename}
+
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('selfies', 'selfies', false)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('results', 'results', false)
+ON CONFLICT (id) DO NOTHING;
 
 CREATE POLICY "Users can upload own selfies"
   ON storage.objects FOR INSERT

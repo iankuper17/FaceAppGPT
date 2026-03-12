@@ -34,10 +34,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Analysis not found" }, { status: 404 });
     }
 
-    const pathInBucket = analysis.image_path.replace(/^selfies\//, "");
     const { data: signData, error: signError } = await supabase.storage
       .from("selfies")
-      .createSignedUrl(pathInBucket, 300);
+      .createSignedUrl(analysis.image_path, 300);
     if (signError || !signData?.signedUrl) {
       return NextResponse.json({ error: "Could not access image" }, { status: 400 });
     }
@@ -106,10 +105,9 @@ export async function GET(request: Request) {
     }
 
     if (glowUp.status === "success" && glowUp.result_image_path) {
-      const pathInBucket = glowUp.result_image_path.replace(/^results\//, "");
       const { data: sd1 } = await supabase.storage
         .from("results")
-        .createSignedUrl(pathInBucket, 3600);
+        .createSignedUrl(glowUp.result_image_path, 3600);
       return NextResponse.json({ status: "success", image_url: sd1?.signedUrl ?? undefined });
     }
 
@@ -130,7 +128,7 @@ export async function GET(request: Request) {
       if (!uploadError) {
         await supabase
           .from("glow_ups")
-          .update({ status: "success", result_image_path: `results/${storagePath}` })
+          .update({ status: "success", result_image_path: storagePath })
           .eq("id", glowUp.id);
       }
 

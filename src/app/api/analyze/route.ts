@@ -14,20 +14,18 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const imagePath = typeof body?.image_path === "string" ? body.image_path.trim() : null;
-    if (!imagePath || !imagePath.startsWith(`selfies/${user.id}/`)) {
+    if (!imagePath || !imagePath.startsWith(`${user.id}/`)) {
       return NextResponse.json({ error: "Invalid image_path" }, { status: 400 });
     }
 
-    const pathInBucket = imagePath.replace(/^selfies\//, "");
     const { data: signData, error: signError } = await supabase.storage
       .from("selfies")
-      .createSignedUrl(pathInBucket, 60);
+      .createSignedUrl(imagePath, 60);
     if (signError || !signData?.signedUrl) {
       return NextResponse.json({ error: "Could not access image" }, { status: 400 });
     }
-    const signedUrl = signData.signedUrl;
 
-    const result = await analyzeFaceWithVision(signedUrl);
+    const result = await analyzeFaceWithVision(signData.signedUrl);
     if ("error" in result) {
       return NextResponse.json({ error: result.error }, { status: 502 });
     }

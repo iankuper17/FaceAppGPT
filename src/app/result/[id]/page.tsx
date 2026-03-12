@@ -30,7 +30,7 @@ export default async function ResultPage({ params }: PageProps) {
   let imageUrl: string | null = null;
   const { data: signData } = await supabase.storage
     .from("selfies")
-    .createSignedUrl(analysis.image_path.replace(/^selfies\//, ""), 3600);
+    .createSignedUrl(analysis.image_path, 3600);
   if (signData?.signedUrl) imageUrl = signData.signedUrl;
 
   const { data: profile } = await supabase.from("profiles").select("is_premium").eq("id", user.id).single();

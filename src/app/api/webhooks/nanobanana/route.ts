@@ -41,7 +41,7 @@ export async function POST(request: Request) {
       if (!uploadError) {
         await supabase
           .from("glow_ups")
-          .update({ status: "success", result_image_path: `results/${storagePath}` })
+          .update({ status: "success", result_image_path: storagePath })
           .eq("id", row.id);
       }
     } catch (e) {
