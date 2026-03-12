@@ -15,8 +15,8 @@ export function ShareCard({ analysisId, score, percentile }: ShareCardProps) {
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
-  const topPercent = Math.max(1, 100 - (percentile ?? Math.round(score * 10)));
-  const caption = `My Face Score: ${score.toFixed(1)} — Top ${topPercent}% worldwide. What's yours?`;
+  const pct = percentile ?? Math.round(score * 10);
+  const caption = `My FaceScore: ${score.toFixed(1)} — More attractive than ${pct}% of people. What's yours?`;
   const shareUrl = typeof window !== "undefined" ? window.location.origin : "";
   const storyImageUrl = `/api/share-story?analysis_id=${analysisId}`;
 
@@ -32,7 +32,6 @@ export function ShareCard({ analysisId, score, percentile }: ShareCardProps) {
       link.click();
       URL.revokeObjectURL(url);
     } catch {
-      // Fallback: open in new tab
       window.open(storyImageUrl, "_blank");
     } finally {
       setDownloading(false);
@@ -54,16 +53,21 @@ export function ShareCard({ analysisId, score, percentile }: ShareCardProps) {
     try {
       const res = await fetch(storyImageUrl);
       const blob = await res.blob();
-      const file = new File([blob], `facescore-${score.toFixed(1)}.png`, { type: "image/png" });
+      const file = new File([blob], `facescore-${score.toFixed(1)}.png`, {
+        type: "image/png",
+      });
 
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ title: "FaceScore AI", text: caption, files: [file] });
+        await navigator.share({
+          title: "FaceScore",
+          text: caption,
+          files: [file],
+        });
         return;
       }
     } catch (err) {
       if ((err as Error).name === "AbortError") return;
     }
-
     copyCaption();
   }
 
@@ -77,76 +81,89 @@ export function ShareCard({ analysisId, score, percentile }: ShareCardProps) {
       <h3 className="text-title text-white mb-4">Share your score</h3>
 
       <GlassCard className="overflow-hidden">
-        {/* Vertical story preview */}
+        {/* Story preview */}
         <div className="relative w-full flex justify-center p-5 pb-3">
-          <div className="relative aspect-[9/16] w-48 rounded-2xl overflow-hidden shadow-glass-lg bg-gradient-to-b from-graphite-950 via-plum-800/40 to-graphite-950 flex flex-col items-center justify-center">
+          <div className="relative aspect-[9/16] w-44 rounded-2xl overflow-hidden bg-[#08080c] flex flex-col items-center justify-center shadow-glass-lg">
+            {/* Ambient glow */}
             <div
-              className="absolute inset-0 opacity-20"
+              className="absolute inset-0"
               style={{
                 background:
-                  "radial-gradient(circle at 50% 30%, rgba(192,38,211,0.4) 0%, transparent 60%)",
+                  "radial-gradient(ellipse 80% 40% at 50% 35%, rgba(88,28,135,0.2) 0%, transparent 70%)",
               }}
             />
-            <p className="text-[8px] text-white/25 uppercase tracking-[0.2em] mb-2 relative z-10">
-              FaceScore AI
-            </p>
-            <div className="w-14 h-14 rounded-xl bg-white/5 border border-white/10 mb-2 relative z-10" />
-            <p className="text-2xl font-bold text-gradient-ig relative z-10">
-              {score.toFixed(1)}
-            </p>
-            <p className="text-[9px] font-semibold text-white mt-0.5 relative z-10">
-              Top {topPercent}%
-            </p>
-            <div className="mt-2 space-y-1 w-[70%] relative z-10">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="flex items-center gap-1">
-                  <div className="h-[3px] flex-1 rounded-full bg-white/10 overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-ig-violet to-ig-pink"
-                      style={{ width: `${60 + Math.random() * 30}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
+
+            {/* Mini content */}
+            <div className="relative z-10 flex flex-col items-center px-3">
+              <p className="text-[7px] text-white/20 uppercase tracking-[0.15em] mb-2">
+                FaceScore
+              </p>
+
+              {/* Photo placeholder */}
+              <div className="w-16 h-20 rounded-xl bg-white/[0.04] border border-white/[0.06] mb-3" />
+
+              {/* Score */}
+              <p className="text-[28px] leading-none font-extrabold text-gradient-ig">
+                {score.toFixed(1)}
+              </p>
+              <p className="text-[7px] text-white/40 mt-1 text-center">
+                More attractive than {pct}%
+              </p>
+
+              {/* Trait pills */}
+              <div className="flex flex-wrap justify-center gap-[3px] mt-2.5">
+                {["Approachable", "Confident", "Trustworthy"].map((t) => (
+                  <span
+                    key={t}
+                    className="text-[5px] text-white/40 px-1.5 py-[2px] rounded-full bg-white/[0.04] border border-white/[0.06]"
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+
+              {/* CTA */}
+              <p className="text-[6px] text-white/15 mt-3">
+                What&apos;s your score?
+              </p>
             </div>
-            <p className="text-[7px] text-white/15 mt-3 relative z-10">
-              What&apos;s yours?
-            </p>
           </div>
         </div>
 
         <p className="text-micro text-white/25 text-center px-5 mb-4">
-          Download your story card for Instagram or TikTok
+          Download your story to share on Instagram or TikTok
         </p>
 
         {/* Actions */}
         <div className="p-5 pt-0 space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <GlassButton
-              variant="gradient"
-              size="sm"
-              className="w-full"
-              onClick={() => {
-                void downloadStoryImage();
-                copyCaption();
-              }}
-              disabled={downloading}
-            >
-              {downloading ? "Generating..." : "Instagram"}
-            </GlassButton>
-            <GlassButton
-              variant="glass"
-              size="sm"
-              className="w-full"
-              onClick={() => {
-                void downloadStoryImage();
-                copyCaption();
-              }}
-              disabled={downloading}
-            >
-              {downloading ? "Generating..." : "TikTok"}
-            </GlassButton>
-          </div>
+          <GlassButton
+            variant="gradient"
+            size="md"
+            className="w-full"
+            onClick={() => {
+              void downloadStoryImage();
+              copyCaption();
+            }}
+            disabled={downloading}
+          >
+            {downloading ? (
+              <span className="flex items-center gap-2">
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Generating...
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
+                </svg>
+                Download Story
+              </span>
+            )}
+          </GlassButton>
+
           <div className="grid grid-cols-2 gap-3">
             <GlassButton
               variant="glass"

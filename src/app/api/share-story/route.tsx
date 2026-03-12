@@ -1,14 +1,13 @@
 import { ImageResponse } from "next/og";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import type { AnalysisReport } from "@/types/analysis";
+import type { AnalysisReport, PerceivedTraits } from "@/types/analysis";
 
-const TRAIT_CONFIG: { key: keyof NonNullable<AnalysisReport["perceived_traits"]>; label: string; colors: [string, string] }[] = [
-  { key: "confidence", label: "Confidence", colors: ["#f59e0b", "#f97316"] },
-  { key: "trustworthiness", label: "Trustworthy", colors: ["#34d399", "#14b8a6"] },
-  { key: "approachability", label: "Approachable", colors: ["#38bdf8", "#3b82f6"] },
-  { key: "intelligence", label: "Intelligence", colors: ["#8b5cf6", "#a855f7"] },
-  { key: "dominance", label: "Dominance", colors: ["#fb7185", "#ec4899"] },
+const SHAREABLE_TRAITS: { key: keyof PerceivedTraits; label: string }[] = [
+  { key: "approachability", label: "Approachable" },
+  { key: "trustworthiness", label: "Trustworthy" },
+  { key: "confidence", label: "Confident" },
+  { key: "intelligence", label: "Intelligent" },
 ];
 
 export async function GET(request: NextRequest) {
@@ -57,10 +56,20 @@ export async function GET(request: NextRequest) {
 
   const score = Number(analysis.face_score);
   const percentile = analysis.percentile ?? Math.round(score * 10);
-  const topPercent = Math.max(1, 100 - percentile);
   const report = analysis.report as AnalysisReport | null;
   const traits = report?.perceived_traits;
-  const predictions = report?.life_predictions;
+  const attractiveFeatures = report?.attractive_features;
+
+  // Pick top 4 shareable traits sorted by value descending
+  const topTraits = traits
+    ? SHAREABLE_TRAITS
+        .filter(({ key }) => traits[key] != null)
+        .sort((a, b) => (traits[b.key] ?? 0) - (traits[a.key] ?? 0))
+        .slice(0, 4)
+    : [];
+
+  // Pick up to 3 attractive feature labels
+  const highlights = (attractiveFeatures ?? []).slice(0, 3).map((f) => f.label);
 
   return new ImageResponse(
     (
@@ -71,272 +80,299 @@ export async function GET(request: NextRequest) {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          background: "linear-gradient(180deg, #08080c 0%, #110e1d 25%, #1a1230 50%, #110e1d 75%, #08080c 100%)",
+          background: "#08080c",
           fontFamily: "sans-serif",
-          padding: "70px 60px",
           position: "relative",
+          overflow: "hidden",
         }}
       >
-        {/* Ambient glow behind selfie */}
+        {/* Background ambient gradient */}
         <div
           style={{
             position: "absolute",
-            top: "180px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: "500px",
-            height: "500px",
+            top: "0",
+            left: "0",
+            right: "0",
+            bottom: "0",
             background:
-              "radial-gradient(circle, rgba(139,92,246,0.18) 0%, rgba(192,38,211,0.1) 40%, transparent 70%)",
+              "radial-gradient(ellipse 80% 50% at 50% 38%, rgba(88,28,135,0.18) 0%, rgba(192,38,211,0.06) 40%, transparent 70%)",
             display: "flex",
           }}
         />
 
-        {/* Branding */}
+        {/* Soft glow behind photo area */}
         <div
           style={{
-            fontSize: "26px",
-            color: "rgba(255,255,255,0.25)",
-            letterSpacing: "8px",
-            textTransform: "uppercase" as const,
-            marginBottom: "50px",
+            position: "absolute",
+            top: "120px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "800px",
+            height: "800px",
+            background:
+              "radial-gradient(circle, rgba(168,85,247,0.12) 0%, rgba(236,72,153,0.06) 35%, rgba(249,115,22,0.03) 55%, transparent 70%)",
             display: "flex",
           }}
-        >
-          FaceScore AI
-        </div>
+        />
 
-        {/* Selfie */}
-        {selfieDataUrl ? (
+        {/* Content container */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            width: "100%",
+            height: "100%",
+            padding: "64px 80px 60px",
+            position: "relative",
+          }}
+        >
+          {/* Brand header */}
           <div
             style={{
-              width: "320px",
-              height: "320px",
-              borderRadius: "40px",
-              overflow: "hidden",
-              border: "3px solid rgba(255,255,255,0.1)",
+              fontSize: "30px",
+              fontWeight: 500,
+              color: "rgba(255,255,255,0.22)",
+              letterSpacing: "10px",
+              textTransform: "uppercase" as const,
               display: "flex",
-              marginBottom: "44px",
             }}
           >
-            <img
-              src={selfieDataUrl}
-              width={320}
-              height={320}
-              style={{ objectFit: "cover", width: "100%", height: "100%" }}
+            FaceScore
+          </div>
+
+          {/* Profile photo */}
+          <div
+            style={{
+              marginTop: "40px",
+              display: "flex",
+              position: "relative",
+            }}
+          >
+            {/* Glass card glow ring */}
+            <div
+              style={{
+                position: "absolute",
+                top: "-8px",
+                left: "-8px",
+                right: "-8px",
+                bottom: "-8px",
+                borderRadius: "56px",
+                background:
+                  "linear-gradient(145deg, rgba(168,85,247,0.15), rgba(236,72,153,0.1), rgba(249,115,22,0.08))",
+                display: "flex",
+              }}
             />
-          </div>
-        ) : (
-          <div
-            style={{
-              width: "320px",
-              height: "320px",
-              borderRadius: "40px",
-              background: "rgba(255,255,255,0.05)",
-              border: "3px solid rgba(255,255,255,0.1)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: "44px",
-              fontSize: "80px",
-            }}
-          >
-            👤
-          </div>
-        )}
-
-        {/* Score */}
-        <div
-          style={{
-            fontSize: "130px",
-            fontWeight: 800,
-            background: "linear-gradient(135deg, #8b5cf6, #c026d3, #ec4899, #f97316)",
-            backgroundClip: "text",
-            color: "transparent",
-            lineHeight: 1,
-            display: "flex",
-          }}
-        >
-          {score.toFixed(1)}
-        </div>
-
-        {/* Percentile */}
-        <div
-          style={{
-            fontSize: "34px",
-            color: "#ffffff",
-            fontWeight: 600,
-            marginTop: "8px",
-            marginBottom: "50px",
-            display: "flex",
-          }}
-        >
-          Top {topPercent}% worldwide
-        </div>
-
-        {/* Traits */}
-        {traits && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              width: "100%",
-              gap: "18px",
-              marginBottom: "40px",
-            }}
-          >
-            {TRAIT_CONFIG.map(({ key, label, colors }) => {
-              const value = traits[key];
-              if (value == null) return null;
-              return (
+            <div
+              style={{
+                width: "580px",
+                height: "700px",
+                borderRadius: "48px",
+                overflow: "hidden",
+                border: "2px solid rgba(255,255,255,0.08)",
+                display: "flex",
+                position: "relative",
+                background: "rgba(255,255,255,0.03)",
+              }}
+            >
+              {selfieDataUrl ? (
+                <img
+                  src={selfieDataUrl}
+                  width={580}
+                  height={700}
+                  style={{ objectFit: "cover", width: "100%", height: "100%" }}
+                />
+              ) : (
                 <div
-                  key={key}
                   style={{
+                    width: "100%",
+                    height: "100%",
                     display: "flex",
                     alignItems: "center",
-                    gap: "16px",
+                    justifyContent: "center",
+                    background: "rgba(255,255,255,0.02)",
+                    fontSize: "120px",
                   }}
                 >
+                  👤
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Main score */}
+          <div
+            style={{
+              marginTop: "44px",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "156px",
+                fontWeight: 800,
+                background:
+                  "linear-gradient(135deg, #a855f7 0%, #ec4899 50%, #f97316 100%)",
+                backgroundClip: "text",
+                color: "transparent",
+                lineHeight: 1,
+                display: "flex",
+              }}
+            >
+              {score.toFixed(1)}
+            </div>
+            <div
+              style={{
+                fontSize: "30px",
+                color: "rgba(255,255,255,0.55)",
+                fontWeight: 400,
+                marginTop: "12px",
+                display: "flex",
+                textAlign: "center",
+              }}
+            >
+              More attractive than {percentile}% of people worldwide
+            </div>
+          </div>
+
+          {/* Separator */}
+          {topTraits.length > 0 && (
+            <div
+              style={{
+                width: "80px",
+                height: "2px",
+                background:
+                  "linear-gradient(90deg, transparent, rgba(168,85,247,0.3), rgba(236,72,153,0.3), transparent)",
+                marginTop: "44px",
+                display: "flex",
+              }}
+            />
+          )}
+
+          {/* Perception traits */}
+          {topTraits.length > 0 && (
+            <div
+              style={{
+                marginTop: "36px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "0px",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "22px",
+                  color: "rgba(255,255,255,0.3)",
+                  fontWeight: 400,
+                  letterSpacing: "1px",
+                  marginBottom: "20px",
+                  display: "flex",
+                }}
+              >
+                People perceive you as
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  justifyContent: "center",
+                  gap: "12px",
+                }}
+              >
+                {topTraits.map(({ key, label }) => (
                   <div
+                    key={key}
                     style={{
-                      width: "210px",
-                      fontSize: "22px",
-                      color: "rgba(255,255,255,0.5)",
                       display: "flex",
-                    }}
-                  >
-                    {label}
-                  </div>
-                  <div
-                    style={{
-                      flex: 1,
-                      height: "14px",
-                      background: "rgba(255,255,255,0.06)",
-                      borderRadius: "7px",
-                      display: "flex",
-                      overflow: "hidden",
+                      alignItems: "center",
+                      padding: "10px 28px",
+                      borderRadius: "100px",
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.07)",
                     }}
                   >
                     <div
                       style={{
-                        width: `${value}%`,
-                        height: "100%",
-                        background: `linear-gradient(90deg, ${colors[0]}, ${colors[1]})`,
-                        borderRadius: "7px",
+                        fontSize: "24px",
+                        color: "rgba(255,255,255,0.7)",
+                        fontWeight: 500,
                         display: "flex",
                       }}
-                    />
+                    >
+                      {label}
+                    </div>
                   </div>
-                  <div
-                    style={{
-                      width: "60px",
-                      fontSize: "22px",
-                      color: "rgba(255,255,255,0.7)",
-                      display: "flex",
-                      justifyContent: "flex-end",
-                    }}
-                  >
-                    {value}%
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                ))}
+              </div>
+            </div>
+          )}
 
-        {/* Life predictions */}
-        {predictions && (
+          {/* Key attributes */}
+          {highlights.length > 0 && (
+            <div
+              style={{
+                marginTop: "32px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              {highlights.map((text) => (
+                <div
+                  key={text}
+                  style={{
+                    fontSize: "22px",
+                    color: "rgba(255,255,255,0.3)",
+                    fontWeight: 400,
+                    display: "flex",
+                  }}
+                >
+                  {text}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Spacer */}
+          <div style={{ flex: 1, display: "flex" }} />
+
+          {/* CTA */}
           <div
             style={{
               display: "flex",
-              gap: "20px",
-              marginBottom: "20px",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "8px",
             }}
           >
-            {predictions.estimated_age != null && (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  padding: "18px 32px",
-                  background: "rgba(255,255,255,0.04)",
-                  borderRadius: "24px",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "34px",
-                    color: "#ffffff",
-                    fontWeight: 700,
-                    display: "flex",
-                  }}
-                >
-                  {predictions.estimated_age}
-                </div>
-                <div
-                  style={{
-                    fontSize: "18px",
-                    color: "rgba(255,255,255,0.35)",
-                    display: "flex",
-                  }}
-                >
-                  Est. Age
-                </div>
-              </div>
-            )}
-            {predictions.vibe && (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: "18px 32px",
-                  background: "rgba(255,255,255,0.04)",
-                  borderRadius: "24px",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "26px",
-                    color: "#ffffff",
-                    fontWeight: 600,
-                    display: "flex",
-                    textAlign: "center",
-                  }}
-                >
-                  {predictions.vibe}
-                </div>
-                <div
-                  style={{
-                    fontSize: "18px",
-                    color: "rgba(255,255,255,0.35)",
-                    display: "flex",
-                  }}
-                >
-                  Vibe
-                </div>
-              </div>
-            )}
+            <div
+              style={{
+                fontSize: "32px",
+                fontWeight: 600,
+                color: "rgba(255,255,255,0.35)",
+                display: "flex",
+              }}
+            >
+              What&apos;s your score?
+            </div>
+            <div
+              style={{
+                fontSize: "22px",
+                fontWeight: 500,
+                background:
+                  "linear-gradient(90deg, #a855f7, #ec4899, #f97316)",
+                backgroundClip: "text",
+                color: "transparent",
+                display: "flex",
+              }}
+            >
+              facescore.ai
+            </div>
           </div>
-        )}
-
-        {/* Spacer pushes CTA to bottom */}
-        <div style={{ flex: 1, display: "flex" }} />
-
-        {/* CTA */}
-        <div
-          style={{
-            fontSize: "28px",
-            color: "rgba(255,255,255,0.2)",
-            letterSpacing: "2px",
-            display: "flex",
-          }}
-        >
-          What&apos;s yours?
         </div>
       </div>
     ),
