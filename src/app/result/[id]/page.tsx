@@ -28,10 +28,10 @@ export default async function ResultPage({ params }: PageProps) {
   if (error || !analysis) notFound();
 
   let imageUrl: string | null = null;
-  const {
-    data: { signedUrl },
-  } = await supabase.storage.from("selfies").createSignedUrl(analysis.image_path.replace(/^selfies\//, ""), 3600);
-  if (signedUrl) imageUrl = signedUrl;
+  const { data: signData } = await supabase.storage
+    .from("selfies")
+    .createSignedUrl(analysis.image_path.replace(/^selfies\//, ""), 3600);
+  if (signData?.signedUrl) imageUrl = signData.signedUrl;
 
   const { data: profile } = await supabase.from("profiles").select("is_premium").eq("id", user.id).single();
   const isPremium = profile?.is_premium ?? false;

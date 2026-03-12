@@ -35,13 +35,13 @@ export async function POST(request: Request) {
     }
 
     const pathInBucket = analysis.image_path.replace(/^selfies\//, "");
-    const {
-      data: { signedUrl },
-      error: signError,
-    } = await supabase.storage.from("selfies").createSignedUrl(pathInBucket, 300);
-    if (signError || !signedUrl) {
+    const { data: signData, error: signError } = await supabase.storage
+      .from("selfies")
+      .createSignedUrl(pathInBucket, 300);
+    if (signError || !signData?.signedUrl) {
       return NextResponse.json({ error: "Could not access image" }, { status: 400 });
     }
+    const signedUrl = signData.signedUrl;
 
     const prompt =
       "Same person, same pose and expression. Improve appearance: better hairstyle, clearer and healthier skin, subtle enhancement. Keep identity and face recognizable. Photorealistic, natural lighting.";
@@ -107,10 +107,10 @@ export async function GET(request: Request) {
 
     if (glowUp.status === "success" && glowUp.result_image_path) {
       const pathInBucket = glowUp.result_image_path.replace(/^results\//, "");
-      const {
-        data: { signedUrl },
-      } = await supabase.storage.from("results").createSignedUrl(pathInBucket, 3600);
-      return NextResponse.json({ status: "success", image_url: signedUrl ?? undefined });
+      const { data: sd1 } = await supabase.storage
+        .from("results")
+        .createSignedUrl(pathInBucket, 3600);
+      return NextResponse.json({ status: "success", image_url: sd1?.signedUrl ?? undefined });
     }
 
     const apiStatus = await getTaskStatus(taskId);
@@ -123,9 +123,9 @@ export async function GET(request: Request) {
       const blob = await res.blob();
       const ext = "png";
       const storagePath = `${user.id}/${crypto.randomUUID()}.${ext}`;
-          const { error: uploadError } = await supabase.storage
-            .from("results")
-            .upload(storagePath, blob, { contentType: "image/png", upsert: false });
+      const { error: uploadError } = await supabase.storage
+        .from("results")
+        .upload(storagePath, blob, { contentType: "image/png", upsert: false });
 
       if (!uploadError) {
         await supabase
@@ -134,10 +134,10 @@ export async function GET(request: Request) {
           .eq("id", glowUp.id);
       }
 
-      const {
-        data: { signedUrl },
-      } = await supabase.storage.from("results").createSignedUrl(storagePath, 3600);
-      return NextResponse.json({ status: "success", image_url: signedUrl ?? undefined });
+      const { data: sd2 } = await supabase.storage
+        .from("results")
+        .createSignedUrl(storagePath, 3600);
+      return NextResponse.json({ status: "success", image_url: sd2?.signedUrl ?? undefined });
     }
 
     if (apiStatus.status === "failed") {
