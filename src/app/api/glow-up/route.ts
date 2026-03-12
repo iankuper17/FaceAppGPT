@@ -46,6 +46,7 @@ export async function POST(request: Request) {
     });
 
     if ("error" in result) {
+      console.error("[glow-up] createImageTask failed:", result.error);
       return NextResponse.json({ error: result.error }, { status: 502 });
     }
 
