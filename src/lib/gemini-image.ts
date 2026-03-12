@@ -1,5 +1,5 @@
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta";
-const MODEL = "gemini-2.0-flash-exp";
+const MODEL = "gemini-2.5-flash-image";
 
 export async function generateGlowUpImage(
   imageBase64: string,
@@ -13,30 +13,29 @@ export async function generateGlowUpImage(
 
   try {
     const res = await fetch(
-      `${GEMINI_BASE}/models/${MODEL}:generateContent?key=${apiKey}`,
+      `${GEMINI_BASE}/models/${MODEL}:generateContent`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
+        },
         body: JSON.stringify({
           contents: [
             {
               parts: [
                 { text: prompt },
-                { inline_data: { mime_type: mimeType, data: imageBase64 } },
+                { inlineData: { mimeType, data: imageBase64 } },
               ],
             },
           ],
-          generationConfig: {
-            responseModalities: ["IMAGE", "TEXT"],
-            maxOutputTokens: 8192,
-          },
         }),
       },
     );
 
     if (!res.ok) {
       const errText = await res.text();
-      console.error("[gemini-image] HTTP error:", res.status, errText.slice(0, 300));
+      console.error("[gemini-image] HTTP error:", res.status, errText.slice(0, 500));
       if (res.status === 400 && errText.includes("API_KEY")) {
         return { error: "Google AI API key is invalid. Check GOOGLE_AI_API_KEY." };
       }
@@ -51,16 +50,17 @@ export async function generateGlowUpImage(
     }
 
     const imagePart = parts.find(
-      (p: Record<string, unknown>) => p.inline_data,
+      (p: Record<string, unknown>) => p.inlineData || p.inline_data,
     );
-    if (!imagePart?.inline_data?.data) {
-      console.error("[gemini-image] No image in response parts:", parts.map((p: Record<string, unknown>) => Object.keys(p)));
+    const inlineData = (imagePart?.inlineData ?? imagePart?.inline_data) as Record<string, unknown> | undefined;
+    if (!inlineData?.data) {
+      console.error("[gemini-image] No image in response parts:", JSON.stringify(parts.map((p: Record<string, unknown>) => Object.keys(p))));
       return { error: "Gemini did not return an image. Try again." };
     }
 
     return {
-      imageBase64: imagePart.inline_data.data as string,
-      mimeType: (imagePart.inline_data.mime_type as string) || "image/png",
+      imageBase64: inlineData.data as string,
+      mimeType: (inlineData.mimeType as string) || (inlineData.mime_type as string) || "image/png",
     };
   } catch (e) {
     console.error("[gemini-image] fetch error:", e);
