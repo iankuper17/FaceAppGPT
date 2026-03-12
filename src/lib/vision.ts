@@ -47,7 +47,8 @@ export async function analyzeFaceWithVision(imageUrl: string): Promise<{ report:
     },
     body: JSON.stringify({
       model: "gpt-4o",
-      max_tokens: 1200,
+      max_tokens: 2000,
+      response_format: { type: "json_object" },
       messages: [
         { role: "system", content: ANALYSIS_SYSTEM },
         {
@@ -73,48 +74,75 @@ export async function analyzeFaceWithVision(imageUrl: string): Promise<{ report:
     return { error: `Vision API error: ${response.status}` };
   }
 
-  const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
-  const content = data.choices?.[0]?.message?.content?.trim();
-  if (!content) return { error: "Empty response from vision API." };
+  const data = (await response.json()) as { choices?: Array<{ message?: { content?: string }; finish_reason?: string }> };
+  const rawContent = data.choices?.[0]?.message?.content?.trim();
+  const finishReason = data.choices?.[0]?.finish_reason;
 
-  try {
-    const parsed = JSON.parse(content);
-    if (parsed.error) return { error: String(parsed.error) };
-
-    const score: number = typeof parsed.face_score === "number" ? Math.min(10, Math.max(0, parsed.face_score)) : 5.5;
-
-    const traits = parsed.perceived_traits as Record<string, unknown> | undefined;
-    const life = parsed.life_predictions as Record<string, unknown> | undefined;
-
-    const report: AnalysisReport = {
-      facial_structure: parsed.facial_structure ?? { jawline: 5, eye_symmetry: 5, facial_balance: 5 },
-      skin_analysis: parsed.skin_analysis ?? { clarity: 5, texture: 5, tone_balance: 5 },
-      expression_impact: parsed.expression_impact ?? { smile_boost: 0.3, neutral_rating: 5 },
-      attractive_features: Array.isArray(parsed.attractive_features) ? parsed.attractive_features : [],
-      improvement_areas: Array.isArray(parsed.improvement_areas) ? parsed.improvement_areas : [],
-      perceived_traits: traits
-        ? {
-            confidence: Number(traits.confidence) || 50,
-            trustworthiness: Number(traits.trustworthiness) || 50,
-            dominance: Number(traits.dominance) || 50,
-            approachability: Number(traits.approachability) || 50,
-            intelligence: Number(traits.intelligence) || 50,
-          }
-        : undefined,
-      life_predictions: life
-        ? {
-            estimated_age: Number(life.estimated_age) || 25,
-            personality: String(life.personality ?? ""),
-            likely_hobbies: Array.isArray(life.likely_hobbies)
-              ? (life.likely_hobbies as string[]).map(String)
-              : [],
-            vibe: String(life.vibe ?? ""),
-          }
-        : undefined,
-    };
-
-    return { report, score };
-  } catch {
-    return { error: "Could not parse analysis response." };
+  if (!rawContent) {
+    console.error("[vision] Empty response. finish_reason:", finishReason);
+    return { error: "Empty response from vision API." };
   }
+
+  // Strip markdown code fences that GPT-4o sometimes adds despite instructions
+  let jsonStr = rawContent;
+  const fenceMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenceMatch) {
+    jsonStr = fenceMatch[1].trim();
+  }
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch {
+    console.error("[vision] JSON parse failed. finish_reason:", finishReason, "raw content:", rawContent.slice(0, 500));
+    // If truncated (max_tokens hit), try to salvage by closing braces
+    if (finishReason === "length") {
+      try {
+        const salvaged = jsonStr + ']}]}';
+        const braceCount = (salvaged.match(/{/g) || []).length - (salvaged.match(/}/g) || []).length;
+        const fixed = salvaged + "}".repeat(Math.max(0, braceCount));
+        parsed = JSON.parse(fixed);
+      } catch {
+        return { error: "Analysis response was truncated. Please try again." };
+      }
+    } else {
+      return { error: "Could not parse analysis response. Please try again." };
+    }
+  }
+
+  if (parsed.error) return { error: String(parsed.error) };
+
+  const score: number = typeof parsed.face_score === "number" ? Math.min(10, Math.max(0, parsed.face_score as number)) : 5.5;
+
+  const traits = parsed.perceived_traits as Record<string, unknown> | undefined;
+  const life = parsed.life_predictions as Record<string, unknown> | undefined;
+
+  const report: AnalysisReport = {
+    facial_structure: (parsed.facial_structure as AnalysisReport["facial_structure"]) ?? { jawline: 5, eye_symmetry: 5, facial_balance: 5 },
+    skin_analysis: (parsed.skin_analysis as AnalysisReport["skin_analysis"]) ?? { clarity: 5, texture: 5, tone_balance: 5 },
+    expression_impact: (parsed.expression_impact as AnalysisReport["expression_impact"]) ?? { smile_boost: 0.3, neutral_rating: 5 },
+    attractive_features: Array.isArray(parsed.attractive_features) ? parsed.attractive_features : [],
+    improvement_areas: Array.isArray(parsed.improvement_areas) ? parsed.improvement_areas : [],
+    perceived_traits: traits
+      ? {
+          confidence: Number(traits.confidence) || 50,
+          trustworthiness: Number(traits.trustworthiness) || 50,
+          dominance: Number(traits.dominance) || 50,
+          approachability: Number(traits.approachability) || 50,
+          intelligence: Number(traits.intelligence) || 50,
+        }
+      : undefined,
+    life_predictions: life
+      ? {
+          estimated_age: Number(life.estimated_age) || 25,
+          personality: String(life.personality ?? ""),
+          likely_hobbies: Array.isArray(life.likely_hobbies)
+            ? (life.likely_hobbies as string[]).map(String)
+            : [],
+          vibe: String(life.vibe ?? ""),
+        }
+      : undefined,
+  };
+
+  return { report, score };
 }
