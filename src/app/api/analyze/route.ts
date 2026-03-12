@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { analyzeFaceWithVision } from "@/lib/vision";
+import { generateDeepReading } from "@/lib/deep-reading";
 import { NextResponse } from "next/server";
 
 export const maxDuration = 60;
@@ -49,12 +50,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Could not access image" }, { status: 400 });
     }
 
-    const result = await analyzeFaceWithVision(signData.signedUrl);
+    const [result, deepResult] = await Promise.all([
+      analyzeFaceWithVision(signData.signedUrl),
+      generateDeepReading(signData.signedUrl).catch((err) => {
+        console.error("[analyze] Deep reading failed, continuing without it:", err);
+        return { error: "Deep reading unavailable" } as const;
+      }),
+    ]);
+
     if ("error" in result) {
       return NextResponse.json({ error: result.error }, { status: 502 });
     }
 
     const { report, score } = result;
+
+    if (!("error" in deepResult)) {
+      report.deep_reading = deepResult.deepReading;
+    }
+
     const percentile = scoreToPercentile(score);
 
     const { data: analysis, error: insertError } = await supabase

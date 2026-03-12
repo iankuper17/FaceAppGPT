@@ -4,6 +4,7 @@ import { ScoreDisplay } from "@/components/ScoreDisplay";
 import { ReportSections } from "@/components/ReportSections";
 import { PerceivedTraits } from "@/components/PerceivedTraits";
 import { LifePredictions } from "@/components/LifePredictions";
+import { DeepReading } from "@/components/DeepReading";
 import { GlowUpSection } from "@/components/GlowUpSection";
 import { ShareCard } from "@/components/ShareCard";
 import { notFound } from "next/navigation";
@@ -111,6 +112,13 @@ export default async function ResultPage({ params }: PageProps) {
       {report?.life_predictions && (
         <div className="mb-14">
           <LifePredictions predictions={report.life_predictions} />
+        </div>
+      )}
+
+      {/* Deep Reading */}
+      {report?.deep_reading && (
+        <div className="mb-14">
+          <DeepReading reading={report.deep_reading} />
         </div>
       )}
 

@@ -40,6 +40,19 @@ export interface LifePredictions {
   vibe: string;
 }
 
+export interface DeepReading {
+  personality_signals: string[];
+  social_role: { role: string; explanation: string };
+  conversation_style: string[];
+  mental_energy: { profile: string; description: string };
+  hidden_strengths: Array<{ strength: string; explanation: string }>;
+  internet_vibe: string[];
+  life_trajectory: string;
+  cosmic_message: string;
+  life_hints: string[];
+  curious_observations: string[];
+}
+
 export interface AnalysisReport {
   facial_structure: FacialStructure;
   skin_analysis: SkinAnalysis;
@@ -48,6 +61,7 @@ export interface AnalysisReport {
   improvement_areas?: ImprovementArea[];
   perceived_traits?: PerceivedTraits;
   life_predictions?: LifePredictions;
+  deep_reading?: DeepReading;
 }
 
 export interface Analysis {
