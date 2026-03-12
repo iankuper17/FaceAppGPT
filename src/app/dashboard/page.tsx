@@ -79,13 +79,24 @@ export default async function DashboardPage() {
         )}
       </section>
 
+      <section className="mb-8">
+        <h2 className="font-semibold text-white mb-3">Compare with friends</h2>
+        <Link
+          href="/compare"
+          className="block rounded-2xl bg-gradient-to-r from-rose-500/10 to-pink-500/10 border border-rose-500/20 p-4 hover:border-rose-500/40 transition"
+        >
+          <p className="font-semibold text-white">Who is hotter?</p>
+          <p className="text-sm text-neutral-400 mt-1">Upload two photos and let the AI decide.</p>
+        </Link>
+      </section>
+
       <section>
         <h2 className="font-semibold text-white mb-3">Leaderboard</h2>
         <Link
           href="/leaderboard"
           className="text-neutral-400 hover:text-white text-sm"
         >
-          View top Meme Brains →
+          View top scores {"\u2192"}
         </Link>
       </section>
     </main>

@@ -15,17 +15,39 @@ export interface ExpressionImpact {
   neutral_rating: number;
 }
 
+export interface AttractiveFeature {
+  label: string;
+  description: string;
+}
+
+export interface ImprovementArea {
+  label: string;
+  description: string;
+}
+
 export interface PerceivedTraits {
-  confidence: string;
-  approachability: string;
-  dominance: string;
+  confidence: number;
+  trustworthiness: number;
+  dominance: number;
+  approachability: number;
+  intelligence: number;
+}
+
+export interface LifePredictions {
+  estimated_age: number;
+  personality: string;
+  likely_hobbies: string[];
+  vibe: string;
 }
 
 export interface AnalysisReport {
   facial_structure: FacialStructure;
   skin_analysis: SkinAnalysis;
   expression_impact: ExpressionImpact;
+  attractive_features?: AttractiveFeature[];
+  improvement_areas?: ImprovementArea[];
   perceived_traits?: PerceivedTraits;
+  life_predictions?: LifePredictions;
 }
 
 export interface Analysis {
@@ -35,6 +57,7 @@ export interface Analysis {
   face_score: number;
   report: AnalysisReport | null;
   percentile: number | null;
+  global_rank: number | null;
   created_at: string;
 }
 

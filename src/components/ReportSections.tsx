@@ -6,65 +6,70 @@ interface ReportSectionsProps {
   report: AnalysisReport;
 }
 
-function Section({
-  title,
-  items,
-}: {
-  title: string;
-  items: { label: string; value: number | string }[];
-}) {
-  return (
-    <section className="rounded-lg border border-neutral-800 bg-neutral-900/50 p-4">
-      <h3 className="font-semibold text-white mb-3">{title}</h3>
-      <ul className="space-y-2">
-        {items.map(({ label, value }) => (
-          <li key={label} className="flex justify-between text-sm">
-            <span className="text-neutral-400">{label}</span>
-            <span className="text-white">{typeof value === "number" ? value.toFixed(1) : value}</span>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
 export function ReportSections({ report }: ReportSectionsProps) {
-  const { facial_structure, skin_analysis, expression_impact, perceived_traits } = report;
+  const { attractive_features, improvement_areas, skin_analysis } = report;
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      <Section
-        title="Facial Structure"
-        items={[
-          { label: "Jawline", value: facial_structure.jawline },
-          { label: "Eye symmetry", value: facial_structure.eye_symmetry },
-          { label: "Facial balance", value: facial_structure.facial_balance },
-        ]}
-      />
-      <Section
-        title="Skin Analysis"
-        items={[
-          { label: "Clarity", value: skin_analysis.clarity },
-          { label: "Texture", value: skin_analysis.texture },
-          { label: "Tone balance", value: skin_analysis.tone_balance },
-        ]}
-      />
-      <Section
-        title="Expression Impact"
-        items={[
-          { label: "Smile boost", value: `+${expression_impact.smile_boost.toFixed(1)}` },
-          { label: "Neutral rating", value: expression_impact.neutral_rating },
-        ]}
-      />
-      {perceived_traits && (
-        <Section
-          title="How people might perceive you"
-          items={[
-            { label: "Confidence", value: perceived_traits.confidence },
-            { label: "Approachability", value: perceived_traits.approachability },
-            { label: "Dominance", value: perceived_traits.dominance },
-          ]}
-        />
+    <div className="space-y-8">
+      {attractive_features && attractive_features.length > 0 && (
+        <section className="animate-fade-in-up" style={{ animationDelay: "0.5s", opacity: 0 }}>
+          <h3 className="text-xl font-bold text-white mb-4">What makes your face attractive</h3>
+          <div className="space-y-3">
+            {attractive_features.map((feat, i) => (
+              <div
+                key={i}
+                className="flex items-start gap-3 rounded-2xl bg-white/[0.04] p-4"
+              >
+                <span className="mt-0.5 text-green-400 text-lg shrink-0">{"\u2713"}</span>
+                <div>
+                  <p className="font-semibold text-white">{feat.label}</p>
+                  <p className="text-sm text-neutral-400 mt-0.5">{feat.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {improvement_areas && improvement_areas.length > 0 && (
+        <section className="animate-fade-in-up" style={{ animationDelay: "0.7s", opacity: 0 }}>
+          <h3 className="text-xl font-bold text-white mb-4">What&apos;s holding you back</h3>
+          <div className="space-y-3">
+            {improvement_areas.map((area, i) => (
+              <div
+                key={i}
+                className="flex items-start gap-3 rounded-2xl bg-white/[0.04] p-4"
+              >
+                <span className="mt-0.5 text-amber-400 text-lg shrink-0">{"\u2193"}</span>
+                <div>
+                  <p className="font-semibold text-white">{area.label}</p>
+                  <p className="text-sm text-neutral-400 mt-0.5">{area.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {skin_analysis && (
+        <section className="animate-fade-in-up" style={{ animationDelay: "0.9s", opacity: 0 }}>
+          <h3 className="text-lg font-semibold text-neutral-300 mb-3">Skin details</h3>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: "Clarity", value: skin_analysis.clarity },
+              { label: "Texture", value: skin_analysis.texture },
+              { label: "Tone", value: skin_analysis.tone_balance },
+            ].map(({ label, value }) => (
+              <div
+                key={label}
+                className="rounded-2xl bg-white/[0.04] p-4 text-center"
+              >
+                <p className="text-2xl font-bold text-white">{value.toFixed(1)}</p>
+                <p className="text-xs text-neutral-500 mt-1">{label}</p>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
     </div>
   );

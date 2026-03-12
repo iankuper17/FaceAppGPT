@@ -12,11 +12,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: profile } = await supabase.from("profiles").select("is_premium").eq("id", user.id).single();
-    if (!profile?.is_premium) {
-      return NextResponse.json({ error: "Premium required" }, { status: 403 });
-    }
-
     const body = await request.json();
     const analysisId = typeof body?.analysis_id === "string" ? body.analysis_id.trim() : null;
     if (!analysisId) {

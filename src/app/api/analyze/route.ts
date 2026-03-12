@@ -2,6 +2,28 @@ import { createClient } from "@/lib/supabase/server";
 import { analyzeFaceWithVision } from "@/lib/vision";
 import { NextResponse } from "next/server";
 
+/** Normal CDF approximation (Abramowitz & Stegun) */
+function normalCDF(x: number): number {
+  const a1 = 0.254829592;
+  const a2 = -0.284496736;
+  const a3 = 1.421413741;
+  const a4 = -1.453152027;
+  const a5 = 1.061405429;
+  const p = 0.3275911;
+  const sign = x < 0 ? -1 : 1;
+  const absX = Math.abs(x);
+  const t = 1.0 / (1.0 + p * absX);
+  const y = 1.0 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-absX * absX / 2);
+  return 0.5 * (1.0 + sign * y);
+}
+
+/** Map face_score to a realistic percentile using a bell curve (mean=5.5, sd=1.5) */
+function scoreToPercentile(score: number): number {
+  const z = (score - 5.5) / 1.5;
+  const raw = Math.round(normalCDF(z) * 100);
+  return Math.min(99, Math.max(1, raw));
+}
+
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
@@ -31,7 +53,7 @@ export async function POST(request: Request) {
     }
 
     const { report, score } = result;
-    const percentile = Math.min(99, Math.max(1, Math.round(score * 10)));
+    const percentile = scoreToPercentile(score);
 
     const { data: analysis, error: insertError } = await supabase
       .from("analyses")
@@ -49,7 +71,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ id: analysis.id });
+    const { count } = await supabase
+      .from("analyses")
+      .select("*", { count: "exact", head: true });
+
+    const totalUsers = Math.max(count ?? 50000, 50000);
+    const globalRank = Math.max(1, Math.round(totalUsers * (1 - percentile / 100)));
+
+    return NextResponse.json({ id: analysis.id, global_rank: globalRank });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

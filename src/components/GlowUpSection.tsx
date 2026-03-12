@@ -53,28 +53,35 @@ export function GlowUpSection({ analysisId, originalImageUrl }: GlowUpSectionPro
 
   if (resultImageUrl && originalImageUrl) {
     return (
-      <div className="rounded-lg border border-neutral-700 bg-neutral-900 p-4">
-        <h3 className="font-semibold text-white mb-4">Glow Up Simulation</h3>
+      <div className="rounded-2xl bg-white/[0.04] p-6">
+        <h3 className="text-xl font-bold text-white mb-4">Your 9/10 Version</h3>
         <GlowUpSlider beforeUrl={originalImageUrl} afterUrl={resultImageUrl} />
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg border border-neutral-700 bg-neutral-900 p-4">
-      <h3 className="font-semibold text-white mb-2">Glow Up Simulation</h3>
-      <p className="text-sm text-neutral-400 mb-4">
-        Generate an improved version: better hairstyle, clearer skin, optimized look.
+    <div
+      className="rounded-2xl p-6 text-center animate-fade-in-up"
+      style={{
+        animationDelay: "1.4s",
+        opacity: 0,
+        background: "linear-gradient(135deg, rgba(255,107,53,0.08) 0%, rgba(247,201,72,0.08) 100%)",
+      }}
+    >
+      <h3 className="text-xl font-bold text-white mb-2">See your 9/10 version</h3>
+      <p className="text-sm text-neutral-400 mb-5 max-w-sm mx-auto">
+        AI enhances your look: better skin, optimized hairstyle, sharper features. Same you, elevated.
       </p>
       <button
         type="button"
         onClick={handleGlowUp}
         disabled={loading}
-        className="rounded-lg bg-white text-black px-4 py-2 font-semibold hover:bg-neutral-200 disabled:opacity-50"
+        className="rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white px-8 py-3 font-semibold hover:opacity-90 disabled:opacity-50 transition"
       >
-        {loading ? "Generating..." : "Simulate glow up"}
+        {loading ? "Generating..." : "Generate my glow up"}
       </button>
-      {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
+      {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
     </div>
   );
 }
